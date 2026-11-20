@@ -22,7 +22,7 @@
   // Enlaces de WhatsApp (footer + CTA final): se activan solo si hay número configurado
   const enlacesWa = ['footer-whatsapp', 'cta-whatsapp', 'cta-whatsapp-alt'];
   if (numeroWhatsAppValido()) {
-    const waURL = `https://wa.me/${WHATSAPP_NUMERO}?text=${encodeURIComponent('Hola, me interesa certificarme con Sagomu. ¿Me pueden dar información?')}`;
+    const waURL = `https://wa.me/${WHATSAPP_NUMERO}?text=${encodeURIComponent('Hola, me interesa certificarme en el Centro Certificador Sagomu. ¿Me pueden dar información?')}`;
     enlacesWa.forEach((id) => {
       const el = document.getElementById(id);
       if (el) { el.href = waURL; el.hidden = false; }
