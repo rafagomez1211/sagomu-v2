@@ -760,7 +760,13 @@
     // detener cualquier reproducción (iframe/video) al cerrar para que el audio no siga
     const vf = $('#video-frame');
     if (vf) {
-      vf.querySelectorAll('iframe, video').forEach((m) => { try { if (m.pause) m.pause(); m.src = ''; } catch (e) {} });
+      vf.querySelectorAll('iframe, video').forEach((m) => {
+        try {
+          if (typeof m.pause === 'function') m.pause();
+          // solo vaciar iframes (YouTube/Vimeo); el video local conserva su src para poder reabrirlo
+          if (m.tagName === 'IFRAME') m.src = '';
+        } catch (e) {}
+      });
     }
     videoModal._closeTimer = setTimeout(() => { videoModal.hidden = true; videoModal._closeTimer = null; }, 350);
     if (modalTrigger && typeof modalTrigger.focus === 'function') modalTrigger.focus();
