@@ -13,7 +13,7 @@
      CONFIG · WhatsApp Business
      ================================================================= */
   // Número en formato internacional, SIN "+", espacios ni guiones (ej. Colombia: 573001234567)
-  const WHATSAPP_NUMERO = '522201058638'; // WhatsApp Business · México (CDMX)
+  const WHATSAPP_NUMERO = '525611309741'; // WhatsApp Business · México (+52 56 1130 9741)
 
   function numeroWhatsAppValido() {
     return /^[1-9]\d{9,14}$/.test(WHATSAPP_NUMERO); // E.164 sin "+"
@@ -188,23 +188,24 @@
      PARTNERS · marquee de logos (duplicado para loop continuo)
      + logos del footer
      ================================================================= */
+  // Cada partner lleva `marca` = la marca del catálogo que se preseleccionará al hacer clic
   const PARTNERS = [
-    { src: 'assets/logos/Adobe_Certified_Professional_badge.svg', alt: 'Adobe Certified Professional' },
-    { src: 'assets/logos/microsoft_office_specialist_badge.svg',  alt: 'Microsoft Office Specialist' },
-    { src: 'assets/logos/cisco.svg',                               alt: 'Cisco' },
-    { src: 'assets/logos/pmi.svg',                                 alt: 'PMI' },
-    { src: 'assets/logos/unity.svg',                               alt: 'Unity' },
-    { src: 'assets/logos/meta.svg',                                alt: 'Meta' },
-    { src: 'assets/logos/Autodesk_certified_User_logo.svg',        alt: 'Autodesk Certified User' },
-    { src: 'assets/logos/ic3.svg',                                 alt: 'IC3' },
-    { src: 'assets/logos/intuit.svg',                              alt: 'Intuit' },
-    { src: 'assets/logos/microsoft_fundamentals_badge.svg',        alt: 'Microsoft Fundamentals' },
+    { src: 'assets/logos/Adobe_Certified_Professional_badge.svg', alt: 'Adobe Certified Professional', marca: 'Adobe' },
+    { src: 'assets/logos/microsoft_office_specialist_badge.svg',  alt: 'Microsoft Office Specialist', marca: 'Microsoft' },
+    { src: 'assets/logos/cisco.svg',                               alt: 'Cisco', marca: 'Cisco' },
+    { src: 'assets/logos/pmi.svg',                                 alt: 'PMI', marca: 'PMI' },
+    { src: 'assets/logos/unity.svg',                               alt: 'Unity', marca: 'Unity' },
+    { src: 'assets/logos/meta.svg',                                alt: 'Meta', marca: 'Meta' },
+    { src: 'assets/logos/Autodesk_certified_User_logo.svg',        alt: 'Autodesk Certified User', marca: 'Autodesk' },
+    { src: 'assets/logos/ic3.svg',                                 alt: 'IC3', marca: 'Certiport' },
+    { src: 'assets/logos/intuit.svg',                              alt: 'Intuit', marca: 'Intuit' },
+    { src: 'assets/logos/microsoft_fundamentals_badge.svg',        alt: 'Microsoft Fundamentals', marca: 'Microsoft' },
   ];
 
   function buildPartners() {
     const track = $('#partners-track');
     if (!track) return;
-    const itemHTML = (p) => `<span class="partner-logo"><img src="${p.src}" alt="${p.alt}" loading="lazy" /></span>`;
+    const itemHTML = (p) => `<a href="#certificaciones" class="partner-logo" data-marca="${escapeAttr(p.marca || '')}" aria-label="Ver certificaciones de ${escapeAttr(p.alt)}"><img src="${p.src}" alt="${p.alt}" loading="lazy" /></a>`;
     // duplicar para loop continuo (translateX -50%)
     track.innerHTML = PARTNERS.map(itemHTML).join('') + PARTNERS.map(itemHTML).join('');
 
@@ -212,20 +213,32 @@
     const footer = $('#footer-logos');
     if (footer) {
       footer.innerHTML = PARTNERS.slice(0, 9).map(
-        (p) => `<a href="#certificaciones" class="footer-logo" aria-label="${p.alt}"><img src="${p.src}" alt="${p.alt}" loading="lazy" /></a>`
+        (p) => `<a href="#certificaciones" class="footer-logo" data-marca="${escapeAttr(p.marca || '')}" aria-label="${p.alt}"><img src="${p.src}" alt="${p.alt}" loading="lazy" /></a>`
       ).join('');
     }
   }
+
+  // Clic en un logo de partner (marquee o footer): ir al catálogo con esa marca ya seleccionada
+  document.addEventListener('click', (e) => {
+    const link = e.target.closest('a[data-marca]');
+    if (!link) return;
+    const base = link.getAttribute('data-marca');
+    if (!base) return;
+    const chip = $$('.brand-chip', rail).find((c) => baseMarca(c.dataset.marca) === base);
+    // Si la marca ya está activa no se deselecciona (se mantiene el catálogo abierto)
+    if (chip && !chip.classList.contains('is-active')) activarMarca(chip);
+  });
 
   /* =================================================================
      CERTIFICACIONES · fetch, render, filtro, modal, acordeón
      ================================================================= */
   let allCertificaciones = [];
-  let categoriaActiva = 'Todas';
+  let marcaActiva = null;
   let modalTrigger = null; // último elemento que abrió el modal (para devolver foco)
 
   const grid        = $('#courses-grid');
-  const filtersWrap = $('#course-filters');
+  const rail        = $('#brand-rail');
+  const browser     = $('#courses-browser');
   const modal       = $('#course-detail-modal');
   const modalBg     = $('#course-backdrop');
 
@@ -241,7 +254,7 @@
       allCertificaciones = certificaciones.map(adaptarCertificacion);
 
       validarPorcentajes(allCertificaciones);
-      construirFiltros();
+      construirMarcas();
       renderCertificaciones(allCertificaciones);
     } catch (err) {
       console.error('No se pudieron cargar las certificaciones:', err);
@@ -307,57 +320,79 @@
     });
   }
 
-  function construirFiltros() {
-    if (!filtersWrap) return;
-    const categorias = ['Todas', ...new Set(allCertificaciones.map((c) => c.categoria).filter(Boolean))];
+  // Marcas del catálogo: nombre corto para el chip + logo de marca preferido
+  const NOMBRES_CORTOS_MARCA = {
+    'Communication Skills for Business': 'CSB',
+    'Critical Career Skills': 'CCS'
+  };
+  const LOGOS_MARCA = {
+    'Adobe': 'assets/logos/Adobe_Certified_Professional_badge.svg',
+    'Apple': 'assets/logos/App_Development_Swift_Badge.svg',
+    'Autodesk': 'assets/logos/Autodesk_certified_User_logo.svg',
+    'Cisco': 'assets/logos/cisco.svg',
+    'Communication Skills for Business': 'assets/logos/Communication_Skills_for_Business_badge.svg',
+    'Critical Career Skills': 'assets/logos/gen-ai-foundations.svg',
+    'Certiport': 'assets/logos/ic3.svg',
+    'Intuit': 'assets/logos/intuit.svg',
+    'Meta': 'assets/logos/meta.svg',
+    'Microsoft': 'assets/logos/microsoft_fundamentals_badge.svg',
+    'PMI': 'assets/logos/pmi.svg',
+    'Unity': 'assets/logos/unity.svg'
+  };
+  // Logos muy horizontales que necesitan una caja más ancha para verse bien
+  const LOGOS_AMPLIOS = new Set(['Adobe', 'Autodesk', 'Intuit', 'PMI']);
+  function baseMarca(marca) {
+    return String(marca || '').split(' / ')[0].trim();
+  }
+  function nombreMarca(marca) {
+    const base = baseMarca(marca);
+    return NOMBRES_CORTOS_MARCA[base] || base;
+  }
 
-    filtersWrap.innerHTML = categorias.map((cat, i) =>
-      `<button class="filter-tab ${i === 0 ? 'is-active' : ''}" role="tab" data-cat="${escapeAttr(cat)}" aria-selected="${i === 0}">${escapeHTML(cat)}</button>`
-    ).join('') + '<span class="tab-indicator" aria-hidden="true"></span>';
+  function construirMarcas() {
+    if (!rail) return;
+    const marcas = [...new Set(allCertificaciones.map((c) => c.marca).filter(Boolean))];
+    rail.innerHTML = marcas.map((m) => {
+      const base = baseMarca(m);
+      const logo = LOGOS_MARCA[base] || (allCertificaciones.find((c) => c.marca === m) || {}).imagenLogo || '';
+      const claseLogo = LOGOS_AMPLIOS.has(base) ? ' chip-logo-amplio' : '';
+      return `<button class="brand-chip${claseLogo}" role="tab" aria-selected="false" data-marca="${escapeAttr(m)}" title="${escapeAttr(m)}">` +
+        (logo ? `<img src="${escapeAttr(logo)}" alt="" loading="lazy" onerror="this.style.display='none';" />` : '') +
+        `<span>${escapeHTML(nombreMarca(m))}</span></button>`;
+    }).join('');
 
-    $$('.filter-tab', filtersWrap).forEach((tab) => {
-      tab.addEventListener('click', () => activarTab(tab));
+    $$('.brand-chip', rail).forEach((chip) => {
+      chip.addEventListener('click', () => activarMarca(chip));
+    });
+  }
+
+  function activarMarca(chip) {
+    const marca = chip.dataset.marca;
+    const yaActiva = chip.classList.contains('is-active');
+
+    $$('.brand-chip', rail).forEach((c) => {
+      c.classList.remove('is-active');
+      c.setAttribute('aria-selected', 'false');
     });
 
-    const indicator = $('.tab-indicator', filtersWrap);
-    const activeTab = $('.filter-tab.is-active', filtersWrap);
-    requestAnimationFrame(() => {
-      if (activeTab && indicator) {
-        indicator.classList.add('ready');
-        moverIndicador(activeTab, indicator);
-      }
-    });
-    if (!filtersWrap.dataset.resizeBound) {
-      filtersWrap.dataset.resizeBound = '1';
-      window.addEventListener('resize', () => {
-        const a = $('.filter-tab.is-active', filtersWrap);
-        if (a && indicator) moverIndicador(a, indicator);
-      });
+    // Segundo clic sobre la marca activa: volver al estado inicial (solo fila de iconos)
+    if (yaActiva) {
+      marcaActiva = null;
+      if (browser) browser.classList.remove('has-selection');
+      return;
     }
-  }
 
-  function moverIndicador(tab, indicator) {
-    const wrapRect = filtersWrap.getBoundingClientRect();
-    const tabRect  = tab.getBoundingClientRect();
-    indicator.style.width = tabRect.width + 'px';
-    indicator.style.transform = `translateX(${tabRect.left - wrapRect.left + filtersWrap.scrollLeft}px)`;
-  }
+    chip.classList.add('is-active');
+    chip.setAttribute('aria-selected', 'true');
+    marcaActiva = marca;
+    if (browser) browser.classList.add('has-selection');
 
-  function activarTab(tab) {
-    $$('.filter-tab', filtersWrap).forEach((t) => {
-      t.classList.remove('is-active');
-      t.setAttribute('aria-selected', 'false');
-    });
-    tab.classList.add('is-active');
-    tab.setAttribute('aria-selected', 'true');
-    const indicator = $('.tab-indicator', filtersWrap);
-    if (indicator) moverIndicador(tab, indicator);
-
-    categoriaActiva = tab.dataset.cat;
-    const lista = categoriaActiva === 'Todas'
-      ? allCertificaciones
-      : allCertificaciones.filter((c) => c.categoria === categoriaActiva);
-    renderCertificaciones(lista);
+    // Animación de intercambio: desvanecer la lista, re-renderizar y entrar
+    grid.classList.add('is-swapping');
+    setTimeout(() => {
+      renderCertificaciones(allCertificaciones.filter((c) => c.marca === marca));
+      grid.classList.remove('is-swapping');
+    }, 200);
   }
 
   function truncar(texto, max = 120) {
@@ -376,7 +411,7 @@
     grid.setAttribute('aria-busy', 'false');
 
     if (!lista.length) {
-      grid.innerHTML = '<p class="courses-loading">No hay certificaciones en esta categoría.</p>';
+      grid.innerHTML = '<p class="courses-loading">No hay certificaciones de esta marca.</p>';
       return;
     }
 
@@ -592,10 +627,7 @@
                   </div>
                 </div>
               ` : ''}
-              <button class="btn btn-outline-secondary btn-sm opcion-contacto" data-opcion="${escapeAttr(op.tipo)}">
-                Solicitar información
-                <svg class="icon" aria-hidden="true"><use href="#i-arrow-right"/></svg>
-              </button>
+              <!-- Botón "Solicitar información" por opción eliminado: el CTA del footer del modal ya lo cubre -->
             </div>
           `).join('')}
         </div>

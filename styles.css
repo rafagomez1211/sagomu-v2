@@ -521,8 +521,8 @@ dl, dd { margin: 0; }
 .cta-title { font-size: clamp(1.8rem, 3.6vw, 2.8rem); color: var(--accent-contrast); max-width: 760px; margin: 0 auto 28px; }
 .cta-title .text-accent { color: var(--accent-contrast); opacity: 0.85; }
 .cta-actions { display: flex; flex-wrap: wrap; gap: 18px; justify-content: center; align-items: center; }
-.cta-inner .btn-primary { background: var(--bg-primary); color: var(--accent); }
-.cta-inner .btn-primary:hover { background: var(--card-bg); }
+.cta-inner .btn-primary { background: #25D366; color: #06331F; }
+.cta-inner .btn-primary:hover { background: #1FBF5B; box-shadow: 0 14px 32px rgba(37, 211, 102, 0.35); }
 .cta-phone { display: inline-flex; align-items: center; gap: 12px; color: var(--accent-contrast); }
 .cta-phone-ic { display: grid; place-items: center; width: 46px; height: 46px; border-radius: 50%; background: rgba(255,255,255,0.16); }
 .cta-phone strong { display: block; font-family: "Poppins", sans-serif; font-size: 1.15rem; }
@@ -796,3 +796,83 @@ body.no-scroll { overflow: hidden; }
   }
   .reveal, .reveal-left, .reveal-right, .reveal-zoom { opacity: 1 !important; transform: none !important; }
 }
+
+/* =====================================================================
+   16. CERTIFICACIONES POR MARCA (rail de iconos + lista en dos columnas)
+   ===================================================================== */
+.courses-browser { display: grid; grid-template-columns: 1fr; gap: 26px; transition: grid-template-columns 0.45s ease; }
+/* Estado inicial: cuadrícula 4 por renglón (3 renglones) de chips grandes */
+.brand-rail { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+.brand-chip {
+  display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
+  padding: 15px 12px; background: var(--card-bg); border: 1px solid var(--border-color);
+  border-radius: 14px; cursor: pointer; min-width: 0;
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+}
+.brand-chip img { width: 76px; height: 76px; object-fit: contain; }
+/* Logos horizontales (Adobe, Autodesk, Intuit, PMI): caja más ancha, misma altura de tarjeta */
+.brand-chip.chip-logo-amplio img { width: 150px; max-width: 100%; height: 76px; }
+.brand-chip span { font-size: 0.92rem; font-weight: 600; color: var(--text-secondary); text-align: center; line-height: 1.15; }
+.brand-chip:hover { transform: translateY(-2px); box-shadow: var(--card-shadow); border-color: var(--accent); }
+.brand-chip.is-active { border-color: var(--accent); background: var(--accent-soft); }
+.brand-chip.is-active span { color: var(--accent); }
+
+/* Estado con marca seleccionada: rail compacto en 2 columnas, contenedor más ancho (sin recortes) */
+.courses-browser.has-selection { grid-template-columns: 168px 1fr; }
+.courses-browser.has-selection .brand-rail { grid-template-columns: repeat(2, 1fr); gap: 8px; align-content: start; max-width: none; margin-inline: 0; max-height: min(560px, 72vh); overflow-y: auto; padding-right: 4px; scrollbar-width: thin; }
+.courses-browser.has-selection .brand-chip { padding: 10px 6px; gap: 5px; border-radius: 12px; }
+.courses-browser.has-selection .brand-chip img { width: 28px; height: 28px; }
+.courses-browser.has-selection .brand-chip span { font-size: 0.64rem; }
+.courses-grid { transition: opacity 0.22s ease, transform 0.22s ease; }
+.courses-grid.is-swapping { opacity: 0; transform: translateX(18px); }
+.courses-browser:not(.has-selection) .courses-grid { display: none; }
+@media (min-width: 769px) {
+  .courses-browser.has-selection { grid-template-columns: 248px 1fr; }
+  .courses-browser.has-selection .brand-rail { position: sticky; top: 96px; max-height: min(640px, 76vh); }
+  .courses-browser.has-selection .brand-chip img { width: 32px; height: 32px; }
+  .courses-browser.has-selection .brand-chip span { font-size: 0.7rem; }
+}
+
+/* =====================================================================
+   17. PREGUNTAS FRECUENTES
+   ===================================================================== */
+.faq-list { max-width: 800px; margin-inline: auto; display: grid; gap: 12px; }
+.faq-item { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 16px; box-shadow: var(--card-shadow); overflow: hidden; }
+.faq-item summary { list-style: none; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 18px 22px; font-family: "Poppins", sans-serif; font-weight: 600; font-size: 1rem; color: var(--text-primary); }
+.faq-item summary::-webkit-details-marker { display: none; }
+.faq-chev { flex: none; width: 18px; height: 18px; transform: rotate(90deg); transition: transform 0.3s ease; color: var(--accent); }
+.faq-item[open] .faq-chev { transform: rotate(-90deg); }
+.faq-a { padding: 0 22px 20px; color: var(--text-secondary); font-size: 0.95rem; line-height: 1.65; }
+
+@media (max-width: 768px) {
+  .brand-rail { gap: 10px; }
+  .brand-chip { padding: 10px 6px; gap: 6px; }
+  .brand-chip img { width: 48px; height: 48px; }
+  .brand-chip span { font-size: 0.7rem; }
+  .courses-browser.has-selection { grid-template-columns: 152px 1fr; }
+}
+
+/* Logos de partners clicables: llevan al catálogo con la marca preseleccionada */
+a.partner-logo { text-decoration: none; cursor: pointer; }
+a.partner-logo:hover { transform: translateY(-3px); box-shadow: var(--card-shadow-hover); border-color: var(--accent); }
+a.footer-logo { text-decoration: none; }
+a.footer-logo:hover img { transform: scale(1.06); }
+
+/* =====================================================================
+   18. AJUSTES DE MODO OSCURO (contraste de tarjetas)
+   ===================================================================== */
+/* Tarjetas "Por qué certificarte": superficie elevada para que resalten del fondo */
+:root[data-theme="dark"] .feature-card { background: #242446; border-color: #3B3B63; }
+/* Tarjetas del catálogo: fondo claro con texto oscuro (legibles como los logos de partners) */
+:root[data-theme="dark"] .course-card { background: #FFFFFF; border-color: #FFFFFF; }
+:root[data-theme="dark"] .course-card .course-cat,
+:root[data-theme="dark"] .course-card .course-cta { color: #6C5CE7; }
+:root[data-theme="dark"] .course-card .course-name,
+:root[data-theme="dark"] .course-card .course-name a { color: #16162A; }
+:root[data-theme="dark"] .course-card .course-desc { color: #57576E; }
+/* Chips de marcas: también claros en modo oscuro, consistentes con las tarjetas del catálogo */
+:root[data-theme="dark"] .brand-chip { background: #FFFFFF; border-color: #D9D9E3; }
+:root[data-theme="dark"] .brand-chip span { color: #57576E; }
+:root[data-theme="dark"] .brand-chip:hover { border-color: #6C5CE7; }
+:root[data-theme="dark"] .brand-chip.is-active { background: #F0EDFD; border-color: #6C5CE7; }
+:root[data-theme="dark"] .brand-chip.is-active span { color: #5A3ED6; }
